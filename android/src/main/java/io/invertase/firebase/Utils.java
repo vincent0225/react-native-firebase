@@ -4,6 +4,8 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +16,8 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
 
 import javax.annotation.Nullable;
 
@@ -33,6 +37,7 @@ public class Utils {
     } else {
       Log.d(TAG, "Missing context - cannot send event!");
     }
+
   }
 
   /**
@@ -84,40 +89,137 @@ public class Utils {
 
   /**
    * Convert a ReadableMap to a WritableMap for the purposes of re-sending back to JS
-   * TODO This is now a legacy util - internally uses RN functionality
    *
    * @param map ReadableMap
    * @return WritableMap
    */
   public static WritableMap readableMapToWritableMap(ReadableMap map) {
-    WritableMap writableMap = Arguments.createMap();
+    // TODO Investigate why there were issues with: #1109
     // https://github.com/facebook/react-native/blob/master/ReactAndroid/src/main/java/com/facebook/react/bridge/WritableNativeMap.java#L54
-    writableMap.merge(map);
+    // WritableMap writableMap = Arguments.createMap();
+    // writableMap.merge(map);
+    // return writableMap;
+
+    WritableMap writableMap = Arguments.createMap();
+
+    ReadableMapKeySetIterator iterator = map.keySetIterator();
+    while (iterator.hasNextKey()) {
+      String key = iterator.nextKey();
+      ReadableType type = map.getType(key);
+      switch (type) {
+        case Null:
+          writableMap.putNull(key);
+          break;
+        case Boolean:
+          writableMap.putBoolean(key, map.getBoolean(key));
+          break;
+        case Number:
+          writableMap.putDouble(key, map.getDouble(key));
+          break;
+        case String:
+          writableMap.putString(key, map.getString(key));
+          break;
+        case Map:
+          writableMap.putMap(key, readableMapToWritableMap(map.getMap(key)));
+          break;
+        case Array:
+          // TODO writableMap.putArray(key, readableArrayToWritableArray(map.getArray(key)));
+          break;
+        default:
+          throw new IllegalArgumentException("Could not convert object with key: " + key + ".");
+      }
+    }
+
     return writableMap;
+
   }
 
   /**
    * Convert a ReadableMap into a native Java Map
-   * TODO This is now a legacy util - internally uses RN functionality
    *
    * @param readableMap ReadableMap
    * @return Map
    */
   public static Map<String, Object> recursivelyDeconstructReadableMap(ReadableMap readableMap) {
+    // TODO Investigate why there were issues with: #1109
     // https://github.com/facebook/react-native/blob/master/ReactAndroid/src/main/java/com/facebook/react/bridge/ReadableNativeMap.java#L216
-    return readableMap.toHashMap();
+    // return readableMap.toHashMap();
+
+    Map<String, Object> deconstructedMap = new HashMap<>();
+    if (readableMap == null) {
+      return deconstructedMap;
+    }
+
+    ReadableMapKeySetIterator iterator = readableMap.keySetIterator();
+    while (iterator.hasNextKey()) {
+      String key = iterator.nextKey();
+      ReadableType type = readableMap.getType(key);
+      switch (type) {
+        case Null:
+          deconstructedMap.put(key, null);
+          break;
+        case Boolean:
+          deconstructedMap.put(key, readableMap.getBoolean(key));
+          break;
+        case Number:
+          deconstructedMap.put(key, readableMap.getDouble(key));
+          break;
+        case String:
+          deconstructedMap.put(key, readableMap.getString(key));
+          break;
+        case Map:
+          deconstructedMap.put(key, Utils.recursivelyDeconstructReadableMap(readableMap.getMap(key)));
+          break;
+        case Array:
+          deconstructedMap.put(key, Utils.recursivelyDeconstructReadableArray(readableMap.getArray(key)));
+          break;
+        default:
+          throw new IllegalArgumentException("Could not convert object with key: " + key + ".");
+      }
+
+    }
+    return deconstructedMap;
+
   }
 
   /**
    * Convert a ReadableArray into a native Java Map
-   * TODO This is now a legacy util - internally uses RN functionality
    *
    * @param readableArray ReadableArray
    * @return List<Object>
    */
   public static List<Object> recursivelyDeconstructReadableArray(ReadableArray readableArray) {
+    // TODO Investigate why there were issues with: #1109
     // https://github.com/facebook/react-native/blob/master/ReactAndroid/src/main/java/com/facebook/react/bridge/ReadableNativeArray.java#L175
-    return readableArray.toArrayList();
+    // return readableArray.toArrayList();
+
+    List<Object> deconstructedList = new ArrayList<>(readableArray.size());
+    for (int i = 0; i < readableArray.size(); i++) {
+      ReadableType indexType = readableArray.getType(i);
+      switch (indexType) {
+        case Null:
+          deconstructedList.add(i, null);
+          break;
+        case Boolean:
+          deconstructedList.add(i, readableArray.getBoolean(i));
+          break;
+        case Number:
+          deconstructedList.add(i, readableArray.getDouble(i));
+          break;
+        case String:
+          deconstructedList.add(i, readableArray.getString(i));
+          break;
+        case Map:
+          deconstructedList.add(i, Utils.recursivelyDeconstructReadableMap(readableArray.getMap(i)));
+          break;
+        case Array:
+          deconstructedList.add(i, Utils.recursivelyDeconstructReadableArray(readableArray.getArray(i)));
+          break;
+        default:
+          throw new IllegalArgumentException("Could not convert object at index " + i + ".");
+      }
+    }
+    return deconstructedList;
   }
 
   /**
