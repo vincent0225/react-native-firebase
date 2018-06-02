@@ -40,6 +40,7 @@ public class RNFirebaseFirestoreCollectionReference {
   private final ReadableMap options;
   private final Query query;
   private ReactContext reactContext;
+  Long interval = 0L;
 
   RNFirebaseFirestoreCollectionReference(ReactContext reactContext, String appName, String path,
                                          ReadableArray filters, ReadableArray orders,
@@ -82,7 +83,11 @@ public class RNFirebaseFirestoreCollectionReference {
         @Override
         public void onEvent(QuerySnapshot querySnapshot, FirebaseFirestoreException exception) {
           if (exception == null) {
-            handleQuerySnapshotEvent(listenerId, querySnapshot);
+            //rate limit
+            if(System.currentTimeMillis() - interval > 1000){
+              interval = System.currentTimeMillis();
+              handleQuerySnapshotEvent(listenerId, querySnapshot);
+            }
           } else {
             ListenerRegistration listenerRegistration = collectionSnapshotListeners.remove(listenerId);
             if (listenerRegistration != null) {

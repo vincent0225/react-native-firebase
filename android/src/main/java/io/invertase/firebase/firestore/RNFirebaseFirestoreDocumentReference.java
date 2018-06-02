@@ -32,6 +32,7 @@ public class RNFirebaseFirestoreDocumentReference {
   private final String path;
   private ReactContext reactContext;
   private final DocumentReference ref;
+  Long interval = 0L;
 
   RNFirebaseFirestoreDocumentReference(ReactContext reactContext, String appName, String path) {
     this.appName = appName;
@@ -84,7 +85,10 @@ public class RNFirebaseFirestoreDocumentReference {
         @Override
         public void onEvent(DocumentSnapshot documentSnapshot, FirebaseFirestoreException exception) {
           if (exception == null) {
-            handleDocumentSnapshotEvent(listenerId, documentSnapshot);
+            if(System.currentTimeMillis() - interval > 1000){
+              interval = System.currentTimeMillis();
+              handleDocumentSnapshotEvent(listenerId, documentSnapshot);
+            }
           } else {
             ListenerRegistration listenerRegistration = documentSnapshotListeners.remove(listenerId);
             if (listenerRegistration != null) {
