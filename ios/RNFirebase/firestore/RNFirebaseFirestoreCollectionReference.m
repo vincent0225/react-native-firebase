@@ -61,7 +61,10 @@ queryListenOptions:(NSDictionary *) queryListenOptions {
                 }
                 [self handleQuerySnapshotError:listenerId error:error];
             } else {
-                [self handleQuerySnapshotEvent:listenerId querySnapshot:snapshot];
+                if([[NSDate date] timeIntervalSince1970] - self.interval>1){
+                    self.interval = [[NSDate date] timeIntervalSince1970];
+                    [self handleQuerySnapshotEvent:listenerId querySnapshot:snapshot];
+                }
             }
         };
 

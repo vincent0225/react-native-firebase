@@ -62,7 +62,10 @@ static NSMutableDictionary *_listeners;
                 }
                 [self handleDocumentSnapshotError:listenerId error:error];
             } else {
-                [self handleDocumentSnapshotEvent:listenerId documentSnapshot:snapshot];
+                if([[NSDate date] timeIntervalSince1970] - self.interval>1){
+                    self.interval = [[NSDate date] timeIntervalSince1970];
+                    [self handleDocumentSnapshotEvent:listenerId documentSnapshot:snapshot];
+                }
             }
         };
         FIRDocumentListenOptions *options = [[FIRDocumentListenOptions alloc] init];

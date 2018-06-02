@@ -16,6 +16,7 @@
 @property NSString *appDisplayName;
 @property NSString *path;
 @property FIRDocumentReference *ref;
+@property NSTimeInterval interval;
 
 - (id)initWithPath:(RCTEventEmitter *)emitter appDisplayName:(NSString *)appDisplayName path:(NSString *)path;
 - (void)delete:(RCTPromiseResolveBlock) resolve rejecter:(RCTPromiseRejectBlock) reject;
